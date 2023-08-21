@@ -1,0 +1,13 @@
+[Event "short study: Chapter 2"]
+[Site "https://lichess.org/study/LKbBDz6U/MxNHkQm9"]
+[Result "*"]
+[UTCDate "2023.08.21"]
+[UTCTime "00:04:46"]
+[Variant "Standard"]
+[ECO "D01"]
+[Opening "Rapport-Jobava System"]
+[Annotator "https://lichess.org/@/alecmag"]
+
+1. d4 Nf6 2. Nc3 d5 3. Bf4 e6 4. Nb5 Bd6?! { This is the most common move, but not the best. It allows White the bishop pair. } (4... Na6 { This is a natural move, but leads to awkward development for black } 5. e3 Be7 6. Nf3 O-O 7. h4!? { Attacking the kingside, and making room for the bishop on h2 }) (4... Bb4+ 5. c3 Ba5 { A creative way to defend the c7 pawn } 6. a4 a6 (6... c6?! { Leaves the c7 square undefended } 7. Nd6+) 7. b4! { This leads to a tactical situation in which White has a powerful attack on the kingside }) 5. Nxd6+ cxd6 6. e3 *
+
+
