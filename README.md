@@ -18,5 +18,7 @@ Will output `[ YOUR_STUDY ].html`
 * Highlight important squares on each position displayed (show diff between lines, threats, etc)
 
 ### Python modules used
+```
 pyvis
 chess
+```
