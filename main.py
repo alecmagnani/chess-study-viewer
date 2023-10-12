@@ -13,46 +13,43 @@ from pprint import pprint
 OPTIONS = """
 const options = {
   "nodes": {
-    "borderWidth": 3,
-    "borderWidthSelected": 5,
-    "shape": "image",
-    "size": 300,
+    "borderWidth": 5,
+    "borderWidthSelected": 7,
+    "size": 25,
     "font": {
-      "size": 60
+      "size": 16,
+      "strokeWidth": 7
     }
   },
   "edges": {
-    "width": 200,
-    "color": "#a0c1f7",
-    "font": {
-        "size": 70,
-        "align": "middle",
-        "color": "black"
-    },
-    "selfReferenceSize": null,
+    "width": 12,
+    "color": "#282a35",
     "selfReference": {
+      "size": 1,
       "angle": 0.7853981633974483
     },
     "smooth": {
-      "type": "continuous",
-      "roundness": 0.75
+      "enabled": true,
+      "type": "cubicBezier",
+      "roundness": 0.55
     }
   },
   "layout": {
     "hierarchical": {
       "enabled": true,
-      "levelSeparation": 2000,
-      "nodeSeparation": 2000,
-      "direction": "LR",
+      "levelSeparation": 150,
+      "nodeSeparation": 180,
+      "direction": "UD",
       "sortMethod": "directed",
-      "shakeTowards": "roots"
+      "shakeTowards": "leaves"
     }
   },
   "physics": {
     "hierarchicalRepulsion": {
-      "centralGravity": 0.0,
-      "avoidOverlap": 1,
-      "springLength": 200
+      "centralGravity": 0.3,
+      "avoidOverlap": 0.99,
+      "springLength": 100,
+      "nodeDistance": 180
     },
     "minVelocity": 0.75,
     "solver": "hierarchicalRepulsion"
@@ -60,7 +57,11 @@ const options = {
 }
 """
 
-def to_annotation(nag):
+def to_annotation(nags):
+    if len(nags) == 0:
+        return ''
+    nag = list(nags)[0]
+
     match nag:
         case chess.pgn.NAG_GOOD_MOVE:
             return '!'
@@ -77,7 +78,11 @@ def to_annotation(nag):
         case _:
             return '', 
 
-def to_color(nag):
+def to_color(nags):
+    if len(nags) == 0:
+        return ''
+    nag = list(nags)[0]
+
     match nag:
         case chess.pgn.NAG_GOOD_MOVE:
             return '#5b8bb0'
@@ -94,31 +99,71 @@ def to_color(nag):
         case _:
             return None
 
-def build_tree(position, parent_node_id = None):
-    id = uuid4().int
+def to_move_string(position):
+    return '{}{}'.format(position.san(), to_annotation(position.nags))
+
+def to_node_label(positions):
     label = ''
+    first_pos = positions[0]
 
-    current_pos = position
-    while current_pos and len(current_pos.variations) == 1:
-        label = label + ' ' + current_pos.san()
-        current_pos = current_pos.next()
+    if first_pos.turn():
+        label += str(first_pos.board().fullmove_number - 1)
+        label += '...'
 
-    if current_pos:
-        svg = chess.svg.board(current_pos.board())
-        with open('assets/{}.svg'.format(id), 'w') as svg_file:
-            svg_file.write(svg)
+    for position in positions:
+        if not position.turn():
+            label += '{}. '.format(str(position.board().fullmove_number))
+        label += '{} '.format(to_move_string(position))
 
-        graph.add_node(id, shape='image', image='assets/{}.svg'.format(id))
-        if parent_node_id:
-            graph.add_edge(parent_node_id, id, label=label)
+    return label
+
+def to_node_title(positions):
+    title = ''
+    first_pos = positions[0]
+
+    if first_pos.turn():
+        title += str(first_pos.board().fullmove_number - 1)
+        title += '...'
+
+    for position in positions:
+        if not position.turn():
+            title += '{}. '.format(str(position.board().fullmove_number))
+        title += '{} '.format(to_move_string(position))
+        if position.turn():
+            title += '\n'
+        if position.comment:
+            title +=  '\t' + position.comment + '\n\n'
+
+    return title
 
 
-        for variation in current_pos.variations:
-            build_tree(variation, id)
+def build_tree(position, parent_node_id):
+    id = uuid4().int
+    positions = [position]
+
+    while len(position.variations) == 1:
+        position = position.next()
+        positions.append(position)
+
+    node_label = to_node_label(positions)
+    node_title = to_node_title(positions)
+
+    graph.add_node(id, 
+                   label=node_label,
+                   title=node_title, 
+                   value=len(positions))
+
+    if parent_node_id:
+        graph.add_edge(parent_node_id, id)
+
+    for variation in position.variations:
+        build_tree(variation, id)
 
 if __name__ == "__main__":
-    graph = Network('1000px', '100%')
+    #graph = Network('300px', '30%', bgcolor='#a3c99e')
     #graph.show_buttons()
+
+    graph = Network('1000px', '100%', bgcolor='#a3c99e', filter_menu=True)
     graph.set_options(OPTIONS)
 
     parser = argparse.ArgumentParser(description="Generate an HTML page with a graph of a study.")
@@ -129,6 +174,6 @@ if __name__ == "__main__":
 
     with open(args.pgn_file, encoding="utf-8") as file:
         game = chess.pgn.read_game(file)
-        graph.add_node('root', label='Start')
-        build_tree(game.next(), 'root')
+        graph.add_node('Start', label='')
+        build_tree(game.next(), 'Start')
         graph.show(args.pgn_file.replace('.pgn', '.html'), notebook=False)
